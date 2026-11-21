@@ -4,25 +4,211 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>River City Syndicate - Latest Videos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef2f4;
+      --surface: #ffffff;
+      --ink: #14263a;
+      --muted: #4f6275;
+      --line: #cfd9e0;
+      --accent: #1f7a6d;
+      --accent-ink: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101a24;
+        --surface: #182533;
+        --ink: #e8eef3;
+        --muted: #9db0c0;
+        --line: #2a3b4b;
+        --accent: #4cc2ae;
+        --accent-ink: #0c1a22;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 1.0625rem;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 68rem; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; }
+    header { margin-bottom: 2rem; }
+    h1, h2 {
+      font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+      font-weight: 700;
+      line-height: 1;
+      margin: 0;
+    }
+    h1 { font-size: clamp(2.75rem, 9vw, 5.5rem); letter-spacing: 0.01em; }
+    .tag { margin: 0.75rem 0 0; color: var(--muted); max-width: 36rem; }
+
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+    .thumb {
+      display: block;
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      object-fit: cover;
+      background: var(--line);
+    }
+    .meta { margin: 0; color: var(--muted); font-size: 0.9375rem; }
+
+    .featured {
+      display: grid;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .featured .body { padding: 1.25rem 1.5rem 1.5rem; }
+    .featured h2 { font-size: clamp(1.75rem, 4.5vw, 2.75rem); margin: 0.25rem 0 1rem; }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 500;
+      font-size: 0.875rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 3px;
+    }
+    .watch {
+      display: inline-block;
+      border: 2px solid var(--ink);
+      border-radius: 3px;
+      padding: 0.45rem 1rem;
+      font-weight: 500;
+    }
+    .featured:hover .watch { background: var(--ink); color: var(--bg); }
+    @media (min-width: 52rem) {
+      .featured { grid-template-columns: 3fr 2fr; }
+      .featured .thumb { height: 100%; aspect-ratio: auto; min-height: 17rem; }
+      .featured .body { display: flex; flex-direction: column; justify-content: center; }
+    }
+
+    .more-title { margin: 2.5rem 0 1rem; font-size: 1.75rem; }
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    }
+    .card {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card .body { padding: 0.9rem 1rem 1.1rem; }
+    .card h3 {
+      font-size: 1.0625rem;
+      font-weight: 500;
+      line-height: 1.3;
+      margin: 0 0 0.4rem;
+    }
+
+    .status { color: var(--muted); padding: 2rem 0; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: 0.9375rem; }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+  </style>
 </head>
 <body>
-  <div id="videos"></div>
+  <div class="wrap">
+    <header>
+      <h1>River City Syndicate</h1>
+      <p class="tag">Latest videos from the Richmond, Virginia rock band.</p>
+    </header>
+
+    <main>
+      <div id="featured"></div>
+      <h2 id="more-title" class="more-title" hidden>Earlier videos</h2>
+      <div id="grid" class="grid"></div>
+      <p id="status" class="status">Loading videos.</p>
+    </main>
+
+    <footer>
+      <a href="https://www.youtube.com/@RiverCitySyndicate">See all videos on YouTube</a>
+    </footer>
+  </div>
+
   <script>
+    const THUMB = id => "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
+    const LINK = id => "https://www.youtube.com/watch?v=" + id;
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      if (isNaN(d)) return "";
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    }
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function thumb(video) {
+      const img = el("img", "thumb");
+      img.src = THUMB(video.id);
+      img.alt = "";
+      img.loading = "lazy";
+      return img;
+    }
+
+    function buildFeatured(video) {
+      const a = el("a", "featured");
+      a.href = LINK(video.id);
+      const body = el("div", "body");
+      body.append(
+        el("span", "badge", "Newest"),
+        el("h2", "", video.title),
+        el("p", "meta", formatDate(video.published)),
+        el("span", "watch", "Watch on YouTube")
+      );
+      a.append(thumb(video), body);
+      return a;
+    }
+
+    function buildCard(video) {
+      const a = el("a", "card");
+      a.href = LINK(video.id);
+      const body = el("div", "body");
+      body.append(el("h3", "", video.title), el("p", "meta", formatDate(video.published)));
+      a.append(thumb(video), body);
+      return a;
+    }
+
+    const status = document.getElementById("status");
+
     fetch("videos.json")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
       .then(list => {
-        const box = document.getElementById("videos");
-        list.forEach(v => {
-          const a = document.createElement("a");
-          a.href = "https://www.youtube.com/watch?v=" + v.id;
-          const img = document.createElement("img");
-          img.src = "https://i.ytimg.com/vi/" + v.id + "/mqdefault.jpg";
-          img.alt = "";
-          const span = document.createElement("span");
-          span.textContent = v.title;
-          a.append(img, span);
-          box.append(a);
-        });
+        if (!Array.isArray(list) || list.length === 0) {
+          status.textContent = "No videos found. Run the Update videos workflow in GitHub Actions.";
+          return;
+        }
+        status.hidden = true;
+        document.getElementById("featured").append(buildFeatured(list[0]));
+        const rest = list.slice(1);
+        if (rest.length > 0) {
+          document.getElementById("more-title").hidden = false;
+          const grid = document.getElementById("grid");
+          rest.forEach(v => grid.append(buildCard(v)));
+        }
+      })
+      .catch(() => {
+        status.textContent = "The video list did not load. Check that videos.json is in the repository.";
       });
   </script>
 </body>
