@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>River City Syndicate - Latest Videos</title>
+</head>
+<body>
+  <div id="videos"></div>
+  <script>
+    fetch("videos.json")
+      .then(r => r.json())
+      .then(list => {
+        const box = document.getElementById("videos");
+        list.forEach(v => {
+          const a = document.createElement("a");
+          a.href = "https://www.youtube.com/watch?v=" + v.id;
+          const img = document.createElement("img");
+          img.src = "https://i.ytimg.com/vi/" + v.id + "/mqdefault.jpg";
+          img.alt = "";
+          const span = document.createElement("span");
+          span.textContent = v.title;
+          a.append(img, span);
+          box.append(a);
+        });
+      });
+  </script>
+</body>
+</html>
